@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRS Attendance System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --background: #f8fafc;
+        }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: var(--background);
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: #64748b; color: white; }
+
+        .google-btn {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 1rem 0;
+        }
+
+        .google-btn img {
+            width: 18px;
+            height: 18px;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            color: white;
+            display: none;
+        }
+
+        .status-box {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1rem 0;
+            color: #666;
+        }
+
+        .separator::before,
+        .separator::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .separator span {
+            padding: 0 10px;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .history-list {
+            margin-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+
+        .history-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .loading {
+            text-align: center;
+            color: #64748b;
+            margin: 1rem 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth View -->
+    <div class="container view active" id="authView">
+        <div class="tab-container">
+            <button class="tab active" data-tab="login">Login</button>
+            <button class="tab" data-tab="register">Register</button>
+        </div>
+        <div id="authAlert" class="alert"></div>
+
+        <!-- Login Form -->
+        <form id="loginForm">
+            <button type="button" id="googleSignIn" class="google-btn">
+                <img src="https://www.google.com/favicon.ico" alt="Google">
+                Sign in with Google
+            </button>
+            
+            <div class="separator">
+                <span>or</span>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn-primary">Login with Email</button>
+        </form>
+
+        <!-- Registration Form -->
+        <form id="registerForm" style="display: none;">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="fullName" required minlength="3">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="regEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPassword" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="phone" required pattern="[0-9]{10}">
+            </div>
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="dob" required>
+            </div>
+            <button type="submit" class="btn-primary">Register</button>
+        </form>
+    </div>
+
+    <!-- Attendance View -->
+    <div class="container view" id="attendanceView">
+        <h1>QRS Attendance</h1>
+        <div id="attendanceAlert" class="alert"></div>
+        <div class="loading" id="loading">Loading...</div>
+        <h2 id="welcomeText"></h2>
+        
+        <div class="status-box">
+            <p>Current Status: <span id="currentStatus">Not Available</span></p>
+            <p>Last Record: <span id="lastRecord">Not Available</span></p>
+        </div>
+
+        <button id="checkInBtn" class="btn-success">Check In</button>
+        <button id="checkOutBtn" class="btn-danger" style="display:none;">Check Out</button>
+        
+        <div class="history-list" id="historyList">
+            <h3>Recent Activity</h3>
+        </div>
+
+        <button id="logoutBtn" class="btn-secondary">Logout</button>
+    </div>
+
+    <!-- Global Functions -->
+    <script>
+        // UI Functions
+        window.switchTab = function(tab) {
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+            
+            // Show/hide forms
+            document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+        };
+
+        window.showLoading = function(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        };
+
+        window.showAlert = function(message, type, viewId) {
+            const alert = document.getElementById(viewId + 'Alert');
+            alert.style.backgroundColor = type === 'success' ? '#16a34a' : '#dc2626';
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 3000);
+        };
+
+        // Add tab click listeners
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+    </script>
+
+    <!-- Firebase Module -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            GoogleAuthProvider,
+            signInWithPopup 
+        } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js';
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc,
+            getDocs,
+            query, 
+            where,
+            orderBy,
+            limit 
+        } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js';
+
+        // Initialize Firebase
+        const app = initializeApp({
+            apiKey: "AIzaSyBvPYd8ksZLlfLWz2TUxk43ee9hZkMvxVU",
+            authDomain: "qrs-sales.firebaseapp.com",
+            projectId: "qrs-sales",
+            storageBucket: "qrs-sales.firebasestorage.app",
+            messagingSenderId: "839598049982",
+            appId: "1:839598049982:web:776f6a67e95c04f266ecef"
+        });
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // View Management
+        function switchView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(view + 'View').classList.add('active');
+        }
+
+        // Authentication Handlers
+        document.getElementById('googleSignIn').addEventListener('click', async () => {
+            try {
+                showLoading(true);
+                const result = await signInWithPopup(auth, googleProvider);
+                
+                // Check if user exists
+                const userQuery = query(
+                    collection(db, "employees"), 
+                    where("uid", "==", result.user.uid)
+                );
+                const snapshot = await getDocs(userQuery);
+
+                if (snapshot.empty) {
+                    // Create new employee profile
+                    await addDoc(collection(db, "employees"), {
+                        uid: result.user.uid,
+                        fullName: result.user.displayName || 'User',
+                        email: result.user.email,
+                        phone: result.user.phoneNumber || '',
+                        createdAt: new Date(),
+                        authProvider: 'google'
+                    });
+                }
+            } catch (error) {
+                console.error('Google sign in error:', error);
+                showAlert(error.message, 'error', 'auth');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            showLoading(true);
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(
+                    auth,
+                    document.getElementById('regEmail').value,
+                    document.getElementById('regPassword').value
+                );
+
+                await addDoc(collection(db, "employees"), {
+                    uid: userCredential.user.uid,
+                    fullName: document.getElementById('fullName').value,
+                    email: document.getElementById('regEmail').value,
+                    phone: document.getElementById('phone').value,
+                    dob: document.getElementById('dob').value,
+                    createdAt: new Date(),
+                    authProvider: 'email'
+                });
+
+                showAlert('Registration successful', 'success', 'auth');
+                e.target.reset();
+                switchTab('login');
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert(error.message, 'error', 'auth');
+            } finally {
+                btn.disabled = false;
+                showLoading(false);
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            showLoading(true);
+
+            try {
+                await signInWithEmailAndPassword(
+                    auth,
+                    document.getElementById('loginEmail').value,
+                    document.getElementById('loginPassword').value
+                );
+                e.target.reset();
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert(error.message, 'error', 'auth');
+            } finally {
+                btn.disabled = false;
+                showLoading(false);
+            }
+        });
+
+        // Attendance Handlers
+        async function recordAttendance(type) {
+            const btn = document.getElementById(type === 'check-in' ? 'checkInBtn' : 'checkOutBtn');
+            btn.disabled = true;
+            showLoading(true);
+
+            try {
+                const record = {
+                    uid: auth.currentUser.uid,
+                    type: type,
+                    timestamp: new Date()
+                };
+
+                await addDoc(collection(db, "attendance"), record);
+                
+                document.getElementById('checkInBtn').style.display = type === 'check-in' ? 'none' : 'block';
+                document.getElementById('checkOutBtn').style.display = type === 'check-in' ? 'block' : 'none';
+
+                showAlert(`${type === 'check-in' ? 'Checked in' : 'Checked out'} successfully`, 'success', 'attendance');
+                loadAttendanceData();
+            } catch (error) {
+                console.error('Attendance error:', error);
+                showAlert('Failed to record attendance', 'error', 'attendance');
+            } finally {
+                btn.disabled = false;
+                showLoading(false);
+            }
+        }
+
+        async function loadAttendanceData() {
+    showLoading(true);
+    try {
+        // Get last record
+        const lastRecordQuery = query(
+            collection(db, "attendance"),
+            where("uid", "==", auth.currentUser.uid),
+            orderBy("timestamp", "desc"),
+            limit(1)
+        );
+
+        const snapshot = await getDocs(lastRecordQuery);
+
+        if (!snapshot.empty) {
+            const record = snapshot.docs[0].data();
+            const timestamp = record.timestamp.toDate();
+            
+            document.getElementById('currentStatus').textContent = 
+                record.type === 'check-in' ? 'Checked In' : 'Checked Out';
+            document.getElementById('lastRecord').textContent = 
+                `${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`;
+            
+            document.getElementById('checkInBtn').style.display = 
+                record.type === 'check-in' ? 'none' : 'block';
+            document.getElementById('checkOutBtn').style.display = 
+                record.type === 'check-in' ? 'block' : 'none';
+        } else {
+            // No previous records found
+            document.getElementById('currentStatus').textContent = 'No records';
+            document.getElementById('lastRecord').textContent = 'N/A';
+            document.getElementById('checkInBtn').style.display = 'block';
+            document.getElementById('checkOutBtn').style.display = 'none';
+        }
+
+        // Load attendance history
+        const historyQuery = query(
+            collection(db, "attendance"),
+            where("uid", "==", auth.currentUser.uid),
+            orderBy("timestamp", "desc"),
+            limit(5)
+        );
+
+        const historySnapshot = await getDocs(historyQuery);
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '<h3>Recent Activity</h3>';
+
+        if (!historySnapshot.empty) {
+            historySnapshot.forEach(doc => {
+                const data = doc.data();
+                const timestamp = data.timestamp.toDate();
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <span>${data.type === 'check-in' ? '🟢 Checked In' : '🔴 Checked Out'}</span>
+                    <span>${timestamp.toLocaleString()}</span>
+                `;
+                historyList.appendChild(item);
+            });
+        } else {
+            // No history found
+            historyList.innerHTML += '<div class="history-item">No activity records found</div>';
+        }
+    } catch (error) {
+        console.error('Error loading attendance:', error);
+        showAlert('Failed to load attendance data', 'error', 'attendance');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Auth State Observer
+onAuthStateChanged(auth, async (user) => {
+    showLoading(true);
+    if (user) {
+        try {
+            const userQuery = query(
+                collection(db, "employees"), 
+                where("uid", "==", user.uid)
+            );
+            const snapshot = await getDocs(userQuery);
+            
+            if (!snapshot.empty) {
+                const userData = snapshot.docs[0].data();
+                document.getElementById('welcomeText').textContent = `Welcome, ${userData.fullName}`;
+            }
+
+            switchView('attendance');
+            await loadAttendanceData();
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            showAlert('Error loading user data', 'error', 'attendance');
+        }
+    } else {
+        switchView('auth');
+    }
+    showLoading(false);
+});
+
+// Event Listeners
+document.getElementById('checkInBtn').addEventListener('click', () => recordAttendance('check-in'));
+document.getElementById('checkOutBtn').addEventListener('click', () => recordAttendance('check-out'));
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        await signOut(auth);
+        showAlert('Logged out successfully', 'success', 'auth');
+    } catch (error) {
+        console.error('Logout error:', error);
+        showAlert('Logout failed', 'error', 'attendance');
+    }
+});
+
+// Initialize the system
+async function initializeSystem() {
+    try {
+        const userQuery = query(collection(db, "employees"), limit(1));
+        const attendanceQuery = query(collection(db, "attendance"), limit(1));
+
+        await Promise.all([
+            getDocs(userQuery),
+            getDocs(attendanceQuery)
+        ]);
+
+        console.log('System initialized successfully');
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showAlert('System initialization failed', 'error', 'auth');
+    }
+}
+
+// Start the system
+initializeSystem();
+  </script>
+  </body>
+</html>
